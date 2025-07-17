@@ -1,3 +1,4 @@
+#define NOMINMAX
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <iostream>

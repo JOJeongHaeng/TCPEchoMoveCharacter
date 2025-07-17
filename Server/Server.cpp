@@ -1,13 +1,17 @@
+#define NOMINMAX
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <iostream>
 #include <WinSock2.h>
 #include "Common.h"
+#include "UserEvents_generated.h"
 
 #pragma comment(lib, "ws2_32")
 
 int main()
 {
+	srand((unsigned int)time(nullptr));
+	
 	WSAData wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 
@@ -23,24 +27,39 @@ int main()
 
 	listen(ListenSocket, 5);
 
+	TIMEVAL Timeout = TIMEVAL{ 0, 100 };
+	fd_set ReadSockets;
+	fd_set ReadSocketCopy;
+	FD_ZERO(&ReadSockets);
+	FD_SET(ListenSocket, &ReadSockets);
+
 	while (true)
 	{
-		SOCKADDR_IN ClientSockAddr;
-		int ClientSockAddrLength = sizeof(ClientSockAddr);
-		SOCKET ClientSocket = accept(ListenSocket, (SOCKADDR*)&ClientSockAddr, &ClientSockAddrLength);
+		ReadSocketCopy = ReadSockets;
 
-		char SendBuffer[1024] = { 0, };
-		std::cin >> SendBuffer;
-		send(ClientSocket, SendBuffer, sizeof(SendBuffer), 0);
-
-		char RecvBuffer[1024] = { 0, };
-		recv(ClientSocket, RecvBuffer, sizeof(RecvBuffer), 0);
-		std::cout << "Client Send : " << RecvBuffer << std::endl;
-
+		int ChangeSocketCount = select(0, &ReadSocketCopy, 0, 0, &Timeout);
+		if (ChangeSocketCount > 0)
+		{
+			for (int i = 0; i < (int)ReadSockets.fd_count; ++i)
+			{
+				if (FD_ISSET(ReadSockets.fd_array[i], &ReadSocketCopy))
+				{
+					if (ReadSockets.fd_array[i] == ListenSocket)
+					{
+						SOCKADDR_IN ClientSockAddr;
+						int ClientSockAddrLength = sizeof(ClientSockAddr);
+						SOCKET ClientSocket = accept(ListenSocket, (SOCKADDR*)&ClientSockAddr, &ClientSockAddrLength);
+						FD_SET(ClientSocket, &ReadSockets);
+					}
+					else
+					{
+						char Buffer[4096] = { 0, };
+						int RecvByte = RecvByte
+					}
+				}
+			}
+		}
 	}
-	char Buffer[1024] = { 0, };
-
-
 	closesocket(ListenSocket);
 
 	WSACleanup();
